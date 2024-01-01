@@ -58,11 +58,9 @@ In Section 4, we claim:
 ### Definitions
 Definitions for each calculus can be found in `Fsub_LetSum_Definitions.v` in each respective folder.
 
-### Soundness
-Soundness (progress and preservation proofs) for each calculus can be found in `Fsub_LetSum_Soundness.v`
-in each respective folder.
-
-
+### Soundness Theorems / Proofs
+Soundness (progress and preservation proofs) for each calculus can be found in `Fsub_LetSum_Soundness.v` in each respective folder.  In addition,
+Lemma 3.7 (capture prediction) can be found as the `capture_prediction` lemma in `RefImmut/Fsub_LetSum_Soundness.v` as well.
 
 ## Pre-built proofs and documentation
 
