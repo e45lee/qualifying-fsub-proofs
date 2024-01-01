@@ -1177,3 +1177,11 @@ Qed.
   match goal with
   | H: typing _ _ ?e _ |- _ => apply (proj1 (proj2 (typing_regular _ _ _ _ H)))
   end : core.
+
+#[export] Hint Extern 1 (wf_typ ?E ?T) =>
+  match goal with
+  | H: typing _ _ _ (qtyp_qtyp ?Q T) |- _ =>
+    apply (wf_typ_from_wf_qtyp E Q T);
+    apply (proj1 (proj2 (proj2 (typing_regular _ _ _ _ H))));
+    auto
+  end : core.

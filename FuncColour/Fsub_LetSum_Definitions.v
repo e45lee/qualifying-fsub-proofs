@@ -38,10 +38,17 @@ Require Export String.
     where indices are unbound.  A term is locally closed when it
     contains no unbound indices.
 
+    Similarly, in addition to pre-types and pre-expressions, we define
+    pre-qualifiers for representing qualifier terms, with possibly
+    unbound indices.
+
     Note that indices for bound type variables are distinct from
     indices for bound expression variables.  We make this explicit in
     the definitions below of the opening operations. *)
 
+
+(** A [qua], a qualifier term, consists of either top, bottom,
+    variables, meets, and joins. *)
 Inductive qua : Set :=
   | qua_top : qua
   | qua_bvar : nat -> qua
@@ -50,6 +57,9 @@ Inductive qua : Set :=
   | qua_join : qua -> qua -> qua
   | qua_bot : qua
 .
+
+(** For brevity we use [`async] and [`sync] to denote top/bottom qualifiers
+    in this calculus. *)
 Notation "`async" := qua_top.
 Notation "`sync" := qua_bot.
 
@@ -109,10 +119,10 @@ Coercion qua_fvar : atom >-> qua.
 (* ********************************************************************** *)
 (** * #<a name="concrete"></a># Concrete Qualifiers *)
 
-(** A concrete qualifier [at runtime] *)
+(** A concrete qualifier, at runtime, is either only top or bot. *)
 Inductive concrete_qua : Set := cqua_top | cqua_bot.
 
-(** concretely getting a runtime qualifier *)
+(** [concretize] partially evaluates a [qua] into a [concrete_qua]. *)
 Fixpoint concretize (q : qua) : (option concrete_qua) :=
   match q with
   | qua_top => Some cqua_top
@@ -133,14 +143,16 @@ Fixpoint concretize (q : qua) : (option concrete_qua) :=
   | qua_bot => Some cqua_bot
   end.
 
-(** getting a qualifier out of a concrete qualifier *)
+(** [abstractize] goes the other way, giving us a qualifier term from
+    a concrete, runtime qualifier. *)
 Definition abstractize (s : concrete_qua) := 
   match s with
   | cqua_top => qua_top
   | cqua_bot => qua_bot
   end.
 
-(** if a given concrete qualifier is compatible with another *)
+(** [cqua_compatible] represents the simple linear order on the two-point
+    binary lattice: bot <= top. *)
 Inductive cqua_compatible : concrete_qua -> concrete_qua -> Prop :=
   | cqua_compatible_same : forall s, cqua_compatible s s
   | cqua_compatible_up : cqua_compatible cqua_bot cqua_top.
@@ -682,7 +694,10 @@ Notation "|- E wf" := (wf_env E) (at level 70).
 (** The definition of subtyping is straightforward.  It uses the
     [binds] relation from the MetatheoryEnv library (in the
     [sub_trans_tvar] case) and cofinite quantification (in the
-    [sub_all] case). *)
+    [sub_all] case). 
+    
+    Subqualification is simply adapted from standard subtyping rules,
+    and shouldn't appear too surprising as well. *)
 
 Inductive subqual : env -> qua -> qua -> Prop :=
   | subqual_top : forall E Q,
@@ -725,12 +740,6 @@ Inductive subqual : env -> qua -> qua -> Prop :=
       subqual E Q R1 ->
       subqual E Q R2 ->
       subqual E Q (qua_meet R1 R2)
-(*  | subqual_dist : forall E Q R S Q' R' S',
-      subqual E Q Q' ->
-      subqual E R R' ->
-      subqual E S S' ->
-      subqual E (qua_meet Q (qua_join R S))
-                (qua_join (qua_meet Q' R') (qua_meet Q' S')) *)
 .
 Notation "E |-sq Q1 <: Q2" := (subqual E Q1 Q2) (at level 70).
       
@@ -886,6 +895,7 @@ Notation "E @ Q |-t e : T" := (typing E Q e T) (at level 70).
 (* ********************************************************************** *)
 (** * #<a name="values"></a># Values *)
 
+(** Unlike standard System F-sub, values now carry a qualifier tag. *)
 Inductive value : exp -> Prop :=
   | value_abs : forall P T e1,
       expr (exp_abs P T e1) ->
@@ -915,7 +925,8 @@ Inductive value : exp -> Prop :=
 (** * #<a name="reduction"></a># Reduction *)
 
 
-(** continuation frames *)
+(** Unlike the standard calculus we use a CK-style machine here. 
+    [frame] models K -- continuation frames in the machine. *)
 Inductive frame : Set :=
   (* [] e ~: c *)
   | frame_abs (e : exp) : frame
@@ -948,30 +959,32 @@ Inductive frame : Set :=
   (* s ~: c *)
   | frame_barrier : concrete_qua -> frame.
 
-(* contexts *)
+(* Contexts -- a [*(list frame)]*)
 Notation ctx := (list frame).
 Notation done := (@nil frame).
 
-(** context typing *)
+(** Context typing: a context K has type T -> bot,
+    representing a hole which can be filled by an expression
+    which produces T. *)
 Inductive typing_ctx : env -> qua -> ctx -> qtyp -> Prop :=
-  (** anything can be consumed by the done environment *)
+  (** Anything can be consumed by the done environment *)
   | typing_ctx_done : forall E Q T,
       wf_env E ->
       wf_qua E Q ->
       wf_qtyp E T ->
       typing_ctx E Q done T
-  (** expecting an abstraction Q (T1 -> T2) *)
+  (** Expecting an abstraction Q (T1 -> T2) *)
   | typing_ctx_abs : forall E Q c e1 T1 T2,
       typing_ctx E Q c T2 ->
       typing E Q e1 T1 ->
       typing_ctx E Q (frame_abs e1 :: c) (qtyp_qtyp Q (typ_arrow T1 T2))
-  (** expecting a value to fill an application to Q (T1 -> T2) *)
+  (** Expecting a value to fill an application to Q (T1 -> T2) *)
   | typing_ctx_app : forall E Q c e1 T1 T2,
       typing_ctx E Q c T2 ->
       value e1 ->
       typing E Q e1 (qtyp_qtyp Q (typ_arrow T1 T2)) ->
       typing_ctx E Q (frame_app e1 :: c) T1
-  (** ditto / type abstractions and qualifier abstractions *)
+  (** Ditto / type abstractions and qualifier abstractions *)
   | typing_ctx_tabs : forall L E Q c T1 T1' T2,
       typing_ctx E Q c (open_tqt T2 T1') ->
       sub E T1' T1 ->
@@ -984,19 +997,19 @@ Inductive typing_ctx : env -> qua -> ctx -> qtyp -> Prop :=
       (forall X : atom, X `notin` L ->
           wf_qtyp (X ~ bind_qua R ++ E) (open_qqt T2 X)) ->
       typing_ctx E Q (frame_qabs R' :: c) (qtyp_qtyp Q (typ_qall R T2))
-  (** filling in a let *)
+  (** Filling in a let *)
   | typing_ctx_let : forall L E Q c e1 T1 T2,
       typing_ctx E Q c T2 ->
       (forall x, x `notin` L -> typing (x ~ bind_typ T1 ++ E) Q (open_ee e1 x) T2) ->
       typing_ctx E Q (frame_let e1 :: c) T1
-  (** expecting a sum type *)
+  (** Expecting a sum type *)
   | typing_ctx_inl : forall E P Q c T1 T2,
       typing_ctx E Q c (qtyp_qtyp P (typ_sum T1 T2)) ->
       typing_ctx E Q (frame_inl P :: c) T1
   | typing_ctx_inr : forall E P Q c T1 T2,
       typing_ctx E Q c (qtyp_qtyp P (typ_sum T1 T2)) ->
       typing_ctx E Q (frame_inr P :: c) T2
-  (** eliminating a pair *)
+  (** Eliminating a pair *)
   | typing_ctx_case : forall L E P Q c T T1 T2 e2 e3,
       wf_qua E P ->
       typing_ctx E Q c T ->
@@ -1005,7 +1018,7 @@ Inductive typing_ctx : env -> qua -> ctx -> qtyp -> Prop :=
       (forall x : atom, x `notin` L ->
         typing (x ~ bind_typ T2 ++ E) Q (open_ee e3 x) T) ->
       typing_ctx E Q (frame_case e2 e3 :: c) (qtyp_qtyp P (typ_sum T1 T2))
-  (** expecting values to construct a pair *)
+  (** Expecting values to construct a pair *)
   | typing_ctx_pair_1 : forall E P Q c e T1 T2,
       wf_qua E P ->
       typing_ctx E Q c (qtyp_qtyp P (typ_pair T1 T2)) ->
@@ -1017,7 +1030,7 @@ Inductive typing_ctx : env -> qua -> ctx -> qtyp -> Prop :=
       value v ->
       typing E Q v T1 ->
       typing_ctx E Q (frame_pair_2 P v :: c) T2
-  (** discharging a pair *)
+  (** Discharging a pair *)
   | typing_ctx_first : forall E P Q c T1 T2,
       wf_qua E P ->
       typing_ctx E Q c T1 ->
@@ -1028,13 +1041,13 @@ Inductive typing_ctx : env -> qua -> ctx -> qtyp -> Prop :=
       typing_ctx E Q c T2 ->
       wf_qtyp E T1 ->
       typing_ctx E Q (frame_second :: c) (qtyp_qtyp P (typ_pair T1 T2))
-  (** frames *)
+  (** Frames *)
   | typing_ctx_barrier : forall E Q c s t T,
       typing_ctx E Q c T ->
       (concretize Q) = Some s ->
       t ≤ s ->
       typing_ctx E (abstractize t) (frame_barrier t :: c) T
-  (** checking / upqual *)
+  (** Checking / upqualification *)
   | typing_ctx_upqual : forall E Q c P T,
       typing_ctx E Q c (qtyp_qtyp P T) ->
       typing_ctx E Q (frame_upqual P :: c) (qtyp_qtyp P T)
@@ -1042,7 +1055,7 @@ Inductive typing_ctx : env -> qua -> ctx -> qtyp -> Prop :=
       wf_qua E R ->
       typing_ctx E Q c (qtyp_qtyp P T) ->
       typing_ctx E Q (frame_check R :: c) (qtyp_qtyp (qua_meet P R) T)
-  (** subtyping and subsumption *)
+  (** Subtyping and subsumption *)
   | typing_ctx_sub : forall E Q c S T,
       typing_ctx E Q c T ->
       subqtype E S T ->
@@ -1066,6 +1079,14 @@ Inductive typing_state : env -> state -> Prop :=
     typing_state E〈 e | c 〉
 .
 
+(**
+    [barrier_compatible] tests if a context is compatible
+    with a function (qualified with some concrete qualifier)
+    that is to be applied and placed on the top of the frame.
+
+    A function f (qualified at q) can only be applied ontop of
+    context k if q >= all barrier qualifiers in k.
+*)
 Inductive barrier_compatible : ctx -> concrete_qua -> Prop :=
   | barrier_compatible_done : forall s, barrier_compatible done s
   | barrier_compatible_frame : forall c s t,
@@ -1078,12 +1099,15 @@ Inductive barrier_compatible : ctx -> concrete_qua -> Prop :=
       barrier_compatible (f :: c) s
 .
 
+(**
+    [step] models the reduction relation.
+*)
 Inductive step : state -> state -> Prop :=
   (** values eliminate barriers -- a.k.a returning from a function *)
   | step_barrier : forall e s k,
       value e ->
       step〈 e | frame_barrier s :: k 〉〈 e | k 〉
-  (** congruence steps *)
+  (** Congruence steps *)
   | step_app_1 : forall e1 e2 k,
       step〈 (exp_app e1 e2) | k 〉
         〈 e1 | frame_abs e2 :: k 〉
@@ -1122,8 +1146,10 @@ Inductive step : state -> state -> Prop :=
   | step_second : forall e1 k,
       step〈 (exp_second e1) | k 〉
         〈 e1 | frame_second :: k 〉
-  (** elimination steps **)
-  (** applying a function installs a suspension barrier **)
+  (** Elimination steps **)
+  (** Applying a function installs a suspension barrier, and
+      can only happen if the function's async-qualifier
+      is compatible with the rest of the context. **)
   | step_app_abs : forall Q V e1 e2 t k,
       value e2 ->
       concretize Q = Some t ->
@@ -1177,7 +1203,7 @@ Inductive step : state -> state -> Prop :=
       value v1 ->
             step〈 v2 | frame_pair_2 P v1 :: k 〉
                 〈 (exp_pair P v1 v2) | k 〉
-  (** upqualification / checking *)
+  (** Upqualification / checking *)
   | step_upqual_1 : forall P e1 k,
       step 〈 (exp_upqual P e1) | k 〉
       〈 e1 | (frame_upqual P :: k) 〉
@@ -1291,3 +1317,4 @@ Inductive done_state : state -> Prop :=
 #[export] Hint Constructors done_state barrier_compatible : core.
 #[export] Hint Resolve typing_upqual typing_check : core.
 #[export] Hint Constructors  cqua_compatible : core.
+#[export] Hint Constructors typing_ctx : core.
