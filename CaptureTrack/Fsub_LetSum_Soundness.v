@@ -2275,7 +2275,7 @@ Qed.
 
 Lemma subqual_compatible : forall s t,
   subqual empty (abstractize s) (abstractize t) ->
-  s ~> t.
+  s ≤ t.
 Proof with eauto.
   intros.
   destruct s; destruct t...

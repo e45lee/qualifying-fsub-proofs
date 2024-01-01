@@ -144,7 +144,7 @@ Definition abstractize (s : concrete_qua) :=
 Inductive cqua_compatible : concrete_qua -> concrete_qua -> Prop :=
   | cqua_compatible_same : forall s, cqua_compatible s s
   | cqua_compatible_up : cqua_compatible cqua_bot cqua_top.
-Notation "s ~> t" := (cqua_compatible s t) (at level 70).
+Notation "s ≤ t" := (cqua_compatible s t) (at level 70).
 
 
 (* ********************************************************************** *)
@@ -1032,7 +1032,7 @@ Inductive typing_ctx : env -> qua -> ctx -> qtyp -> Prop :=
   | typing_ctx_barrier : forall E Q c s t T,
       typing_ctx E Q c T ->
       (concretize Q) = Some s ->
-      t ~> s ->
+      t ≤ s ->
       typing_ctx E (abstractize t) (frame_barrier t :: c) T
   (** checking / upqual *)
   | typing_ctx_upqual : forall E Q c P T,
@@ -1052,7 +1052,7 @@ Inductive typing_ctx : env -> qua -> ctx -> qtyp -> Prop :=
       subqual E R Q ->
       typing_ctx E R c T
 .
-Notation "E @ Q |-c c : T ~~> ⊥" := (typing_ctx E Q c T) (at level 70).
+Notation "E @ Q |-c c : T ~≤ ⊥" := (typing_ctx E Q c T) (at level 70).
 
 Inductive state : Type :=
   | state_step (e : exp) (c : ctx) : state.
@@ -1070,7 +1070,7 @@ Inductive barrier_compatible : ctx -> concrete_qua -> Prop :=
   | barrier_compatible_done : forall s, barrier_compatible done s
   | barrier_compatible_frame : forall c s t,
       barrier_compatible c s ->
-      s ~> t ->
+      s ≤ t ->
       barrier_compatible (frame_barrier t :: c) s
   | barrier_compatible_other : forall c s f,
       barrier_compatible c s ->
@@ -1184,39 +1184,39 @@ Inductive step : state -> state -> Prop :=
   | step_upqual_abs : forall P Q cP cQ V e1 k,
       concretize P = Some cP ->
       concretize Q = Some cQ ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       step 〈 (exp_abs Q V e1) | frame_upqual P :: k 〉 
       〈 (exp_abs P V e1) | k 〉
   | step_upqual_tabs : forall P Q cP cQ V e1 k,
       concretize P = Some cP ->
       concretize Q = Some cQ ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       step 〈 (exp_tabs Q V e1) | frame_upqual P :: k 〉 
       〈 (exp_tabs P V e1) | k 〉
   | step_upqual_qabs : forall P Q cP cQ V e1 k,
       concretize P = Some cP ->
       concretize Q = Some cQ ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       step 〈 (exp_qabs Q V e1) | frame_upqual P :: k 〉 
       〈 (exp_qabs P V e1) | k 〉
   | step_upqual_inl : forall P Q cP cQ v1 k,
       value v1 ->
       concretize P = Some cP ->
       concretize Q = Some cQ ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       step 〈 (exp_inl Q v1) | frame_upqual P :: k 〉 
       〈 (exp_inl P v1) | k 〉
   | step_upqual_inr : forall P Q cP cQ v1 k,
       value v1 ->
       concretize P = Some cP ->
       concretize Q = Some cQ ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       step 〈 (exp_inr Q v1) | frame_upqual P :: k 〉 
       〈 (exp_inr P v1) | k 〉     
   | step_upqual_pair : forall P Q cP cQ v1 v2 k,
       value v1 ->
       value v2 ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       concretize P = Some cP ->
       concretize Q = Some cQ ->
       step 〈 (exp_pair Q v1 v2) | frame_upqual P :: k 〉 
@@ -1227,33 +1227,33 @@ Inductive step : state -> state -> Prop :=
   | step_check_abs : forall P Q cP cQ V e1 k,
       concretize P = Some cP ->
       concretize Q = Some cQ ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       step 〈 (exp_abs Q V e1) | frame_check P :: k 〉 
       〈 (exp_abs Q V e1) | k 〉
   | step_check_tabs : forall P Q cP cQ V e1 k,
       concretize P = Some cP ->
       concretize Q = Some cQ ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       step 〈 (exp_tabs Q V e1) | frame_check P :: k 〉 
       〈 (exp_tabs Q V e1) | k 〉
   | step_check_qabs : forall P Q cP cQ V e1 k,
       concretize P = Some cP ->
       concretize Q = Some cQ ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       step 〈 (exp_qabs Q V e1) | frame_check P :: k 〉 
       〈 (exp_qabs Q V e1) | k 〉
   | step_check_inl : forall P Q cP cQ v1 k,
       value v1 ->
       concretize P = Some cP ->
       concretize Q = Some cQ ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       step 〈 (exp_inl Q v1) | frame_check P :: k 〉 
       〈 (exp_inl Q v1) | k 〉
   | step_check_inr : forall P Q cP cQ v1 k,
       value v1 ->
       concretize P = Some cP ->
       concretize Q = Some cQ ->
-      cQ ~> cP ->
+      cQ ≤ cP ->
       step 〈 (exp_inr Q v1) | frame_check P :: k 〉 
       〈 (exp_inr Q v1) | k 〉     
   | step_check_pair : forall P Q cP cQ v1 v2 k,

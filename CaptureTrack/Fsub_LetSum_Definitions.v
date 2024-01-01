@@ -142,7 +142,7 @@ Definition abstractize (s : concrete_qua) :=
 Inductive cqua_compatible : concrete_qua -> concrete_qua -> Prop :=
   | cqua_compatible_same : forall s, cqua_compatible s s
   | cqua_compatible_up : cqua_compatible cqua_bot cqua_top.
-Notation "s ~> t" := (cqua_compatible s t) (at level 70).
+Notation "s ≤ t" := (cqua_compatible s t) (at level 70).
 
 
 (* ********************************************************************** *)
