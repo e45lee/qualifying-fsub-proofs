@@ -39,10 +39,16 @@ Require Export String.
     where indices are unbound.  A term is locally closed when it
     contains no unbound indices.
 
+    Similarly, in addition to pre-types and pre-expressions, we define
+    pre-qualifiers for representing qualifier terms, with possibly
+    unbound indices.
+
     Note that indices for bound type variables are distinct from
     indices for bound expression variables.  We make this explicit in
     the definitions below of the opening operations. *)
 
+(** A [qua], a qualifier term, consists of either top, bottom,
+    variables, meets, and joins. *)
 Inductive qua : Set :=
   | qua_top : qua
   | qua_bvar : nat -> qua
@@ -51,6 +57,9 @@ Inductive qua : Set :=
   | qua_join : qua -> qua -> qua
   | qua_bot : qua
 .
+
+(** For brevity we use [`readonly] and [`mutable] to denote top/bottom qualifiers
+    in this calculus. *)
 Notation "`readonly" := qua_top.
 Notation "`mutable" := qua_bot.
 
@@ -110,10 +119,10 @@ Coercion qua_fvar : atom >-> qua.
 (* ********************************************************************** *)
 (** * #<a name="concrete"></a># Concrete Qualifiers *)
 
-(** A concrete qualifier [at runtime] *)
+(** A concrete qualifier, at runtime, is either only top or bot. *)
 Inductive concrete_qua : Set := cqua_top | cqua_bot.
 
-(** concretely getting a runtime qualifier *)
+(** [concretize] partially evaluates a [qua] into a [concrete_qua]. *)
 Fixpoint concretize (q : qua) : (option concrete_qua) :=
   match q with
   | qua_top => Some cqua_top
@@ -134,14 +143,16 @@ Fixpoint concretize (q : qua) : (option concrete_qua) :=
   | qua_bot => Some cqua_bot
   end.
 
-(** getting a qualifier out of a concrete qualifier *)
+(** [abstractize] goes the other way, giving us a qualifier term from
+    a concrete, runtime qualifier. *)
 Definition abstractize (s : concrete_qua) := 
   match s with
   | cqua_top => qua_top
   | cqua_bot => qua_bot
   end.
 
-(** if a given concrete qualifier is compatible with another *)
+(** [cqua_compatible] represents the simple linear order on the two-point
+    binary lattice: bot <= top. *)
 Inductive cqua_compatible : concrete_qua -> concrete_qua -> Prop :=
   | cqua_compatible_same : forall s, cqua_compatible s s
   | cqua_compatible_up : cqua_compatible cqua_bot cqua_top.
@@ -712,7 +723,10 @@ Inductive wf_sig : env -> sig -> Prop :=
 (** The definition of subtyping is straightforward.  It uses the
     [binds] relation from the MetatheoryEnv library (in the
     [sub_trans_tvar] case) and cofinite quantification (in the
-    [sub_all] case). *)
+    [sub_all] case). 
+    
+    Subqualification is simply adapted from standard subtyping rules,
+    and shouldn't appear too surprising as well. *)
 
 Inductive subqual : env -> qua -> qua -> Prop :=
   | subqual_top : forall E Q,
@@ -755,12 +769,6 @@ Inductive subqual : env -> qua -> qua -> Prop :=
       subqual E Q R1 ->
       subqual E Q R2 ->
       subqual E Q (qua_meet R1 R2)
-(*  | subqual_dist : forall E Q R S Q' R' S',
-      subqual E Q Q' ->
-      subqual E R R' ->
-      subqual E S S' ->
-      subqual E (qua_meet Q (qua_join R S))
-                (qua_join (qua_meet Q' R') (qua_meet Q' S')) *)
 .
 Notation "E |-q Q <: R" := (subqual E Q R) (at level 70).
 
@@ -897,7 +905,8 @@ Inductive typing : env -> sig -> exp -> qtyp -> Prop :=
       typing E W e (qtyp_qtyp Q 
         (typ_pair (qtyp_qtyp Q1 S1) (qtyp_qtyp Q2 S2))) ->
       typing E W (exp_second e) (qtyp_qtyp (qua_join Q Q2) S2)
-  (* typing_ref, typing_ref_label, typing_deref, typing_set_ref *)
+  (* Rules for typing references follow: [typing_ref], [typing_deref], [typing_set_ref],
+     [typing_ref_label]. *)
   | typing_ref : forall E W P e T,
       wf_sig E W ->
       wf_qua E P ->
@@ -935,6 +944,7 @@ Notation "E @ W |- e : T" := (typing E W e T) (at level 70).
 (* ********************************************************************** *)
 (** * #<a name="values"></a># Values *)
 
+(** Unlike standard System F-sub, values now carry a qualifier tag. *)
 Inductive value : exp -> Prop :=
   | value_abs : forall P T e1,
       expr (exp_abs P T e1) ->
@@ -1130,7 +1140,11 @@ Inductive red : exp -> store -> exp -> store -> Prop :=
       value v1 ->
       value v2 ->
       red (exp_second (exp_pair P v1 v2)) s1 v2 s1
-   (** reduction needs to deal with stores now *)
+  (** Reduction now needs to account for reference cells as well now.
+      Like the rules for upqualification/checking, the rules for writing
+      to a reference cell check the qualifier tagged on the cell to make sure
+      the reference is writable before allowing a write to go through.
+      See [red_set_box_ref]. *)
   | red_ref_1 : forall P e1 e1' s1 s1',
       qual P ->
       red e1 s1 e1' s1' ->
@@ -1167,6 +1181,9 @@ Inductive red : exp -> store -> exp -> store -> Prop :=
       cqua_compatible cP cqua_bot ->
       LabelMapImpl.MapsTo l v1 s1 ->
       red (exp_set_ref (exp_ref_label P l) v2) s1 v1 (LabelMapImpl.add l v2 s1)
+(** The upqual and check rules ensure that concrete qualifiers
+    are compatible before stepping.  This ensures that progress/preservation
+    are meaningful -- ill-typed/qualified programs will get stuck. *)
   | red_upqual_1 : forall P e1 e1' s1 s1',
       qual P ->
       red e1 s1 e1' s1' ->
