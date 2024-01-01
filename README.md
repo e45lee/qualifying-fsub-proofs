@@ -81,3 +81,14 @@ To extract the pre-built proofs and documentation (into a folder called `proofs`
 In addition, the Coq documentation can be found online at (hopefully soon!):
 
 <https://e45lee.github.io/qualifying-fsub-proofs/toc.html>
+
+## Reusability Guide
+
+In general, the base calculi (stored in [Base](Base) and [ExtendedBase](ExtendedBase)) can be reused to serve as the basis of a soundness proof
+for a specific instantiation of a qualifier calculus to concrete qualifiers
+and interpretations.  In particular, to construct our proofs of soundness
+for our 3 dervied calculi we started from our base calculus proof and
+extended it with the new terms and reduction rules -- features -- present
+in each extension, taking care to assign meaningful and reasonable
+interpretations of qualifiers as well, as one would do on paper as well
+(See Section 2.2 of the paper).
