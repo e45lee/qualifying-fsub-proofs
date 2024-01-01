@@ -18,7 +18,7 @@
 
 Require Export ExtendedBase.LabelMap.
 Require Export ExtendedBase.Label.
-Require Export Metalib.Metatheory.
+Require Export FqMeta.Metatheory.
 Require Export String.
 Require Export Lattice.
 

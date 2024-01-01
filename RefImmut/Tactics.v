@@ -22,7 +22,7 @@
       - #<a href="##nf-properties"> Additional properties of normal forms under opening and substitution</a>#
       - #<a href="##auto">Automation</a>#
       - #<a href="##body">Properties of body_e</a># *)
-Require Export Metalib.Metatheory.
+Require Export FqMeta.Metatheory.
 
 Ltac autodestruct_if :=
   repeat match goal with

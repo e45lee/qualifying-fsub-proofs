@@ -18,7 +18,7 @@
 
 Require Export Fsub.CaptureTrack.LabelMap.
 Require Export Fsub.CaptureTrack.Label.
-Require Export Metalib.Metatheory.
+Require Export FqMeta.Metatheory.
 Require Export String.
 
 (* ********************************************************************** *)

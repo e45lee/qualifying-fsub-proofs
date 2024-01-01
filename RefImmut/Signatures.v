@@ -1,6 +1,6 @@
 (* ********************************************************************** *)
 (** * Signatures *)
-Require Import Metalib.Metatheory.
+Require Import FqMeta.Metatheory.
 Require Import Fsub.RefImmut.Label.
 
 (** We can use our implementation of association lists (in AssocList)

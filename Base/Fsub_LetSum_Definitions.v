@@ -18,7 +18,7 @@
 
 Require Export Base.LabelMap.
 Require Export Base.Label.
-Require Export Metalib.Metatheory.
+Require Export FqMeta.Metatheory.
 Require Export String.
 
 (* ********************************************************************** *)

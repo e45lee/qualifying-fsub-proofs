@@ -19,7 +19,7 @@
 Require Export Fsub.RefImmut.LabelMap.
 Require Export Fsub.RefImmut.Label.
 Require Export Fsub.RefImmut.Signatures.
-Require Export Metalib.Metatheory.
+Require Export FqMeta.Metatheory.
 Require Export String.
 
 (* ********************************************************************** *)

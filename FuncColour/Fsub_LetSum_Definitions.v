@@ -18,7 +18,7 @@
 
 Require Export FuncColour.LabelMap.
 Require Export FuncColour.Label.
-Require Export Metalib.Metatheory.
+Require Export FqMeta.Metatheory.
 Require Export String.
 
 (* ********************************************************************** *)

@@ -13,10 +13,10 @@ Require Import Coq.Lists.List.
 Require Import Coq.Structures.Equalities.
 
 Require Import Coq.FSets.FSets.
-Require Import Metalib.CoqListFacts.
-Require Import Metalib.FSetExtra.
-Require Import Metalib.FSetWeakNotin.
-Require Import Metalib.LibTactics.
+Require Import FqMeta.CoqListFacts.
+Require Import FqMeta.FSetExtra.
+Require Import FqMeta.FSetWeakNotin.
+Require Import FqMeta.LibTactics.
 
 Require Import Lia.
 
