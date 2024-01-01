@@ -22,6 +22,7 @@ Require Export FqMeta.Metatheory.
 Require Export String.
 Require Export Lattice.
 
+(** Here, we are assuming our qualifier lattice *)
 Parameter B : Set.
 Context `{O : Order B}.
 Context `{L : Lattice B}.
@@ -44,10 +45,16 @@ Context `{@LOSet B O L}.
     where indices are unbound.  A term is locally closed when it
     contains no unbound indices.
 
+    Similarly, in addition to pre-types and pre-expressions, we define
+    pre-qualifiers for representing qualifier terms, with possibly
+    unbound indices.
+
     Note that indices for bound type variables are distinct from
     indices for bound expression variables.  We make this explicit in
     the definitions below of the opening operations. *)
 
+(** A [qua], a qualifier term, consists of either a base qualifier lattice element,
+    variables, meets, and joins. *)
 Inductive qua : Set :=
   | qua_base : B -> qua
   | qua_bvar : nat -> qua
@@ -112,10 +119,10 @@ Coercion qua_fvar : atom >-> qua.
 (* ********************************************************************** *)
 (** * #<a name="concrete"></a># Concrete Qualifiers *)
 
-(** A concrete qualifier [at runtime] *)
+(** A concrete qualifier, at runtime, is an element of the base lattice. *)
 Definition concrete_qua : Set := B.
 
-(** concretely getting a runtime qualifier *)
+(** [concretize] partially evaluates a [qua] into a [concrete_qua]. *)
 Fixpoint concretize (q : qua) : (option concrete_qua) :=
   match q with
   | qua_base b => Some b
@@ -133,10 +140,14 @@ Fixpoint concretize (q : qua) : (option concrete_qua) :=
     end
   end.
 
-(** getting a qualifier out of a concrete qualifier *)
+(** [abstractize] goes the other way, giving us a qualifier term from
+    a concrete, runtime qualifier. *)
 Definition abstractize (s : concrete_qua) := 
   qua_base s.
 #[export] Hint Transparent abstractize : core.
+
+(** Unlike before, B carries a linear order <=, so we don't need to define our
+    own. *)
 
 (* ********************************************************************** *)
 (** * #<a name="open"></a># Opening terms *)
@@ -662,7 +673,13 @@ Inductive wf_env : env -> Prop :=
 (** The definition of subtyping is straightforward.  It uses the
     [binds] relation from the MetatheoryEnv library (in the
     [sub_trans_tvar] case) and cofinite quantification (in the
-    [sub_all] case). *)
+    [sub_all] case). 
+    
+    Subqualification is simply adapted from standard subtyping rules,
+    and shouldn't appear too surprising as well.  Notable exceptions
+    being the two transitivity rules through base lattice elements
+    [subqual_eval_elim] and [subqual_eval_intro], and the lifting rule
+    [subqual_lift_elem]. *)
 
 Inductive subqual : env -> qua -> qua -> Prop :=
   | subqual_top : forall E Q,
@@ -719,12 +736,6 @@ Inductive subqual : env -> qua -> qua -> Prop :=
       subqual E Q R1 ->
       subqual E Q R2 ->
       subqual E Q (qua_meet R1 R2)
-(*  | subqual_dist : forall E Q R S Q' R' S',
-      subqual E Q Q' ->
-      subqual E R R' ->
-      subqual E S S' ->
-      subqual E (qua_meet Q (qua_join R S))
-                (qua_join (qua_meet Q' R') (qua_meet Q' S')) *)
 .
 
 
@@ -862,6 +873,7 @@ Inductive typing : env -> exp -> qtyp -> Prop :=
 (* ********************************************************************** *)
 (** * #<a name="values"></a># Values *)
 
+(** Unlike standard System F-sub, values now carry a qualifier tag. *)
 Inductive value : exp -> Prop :=
   | value_abs : forall P T e1,
       expr (exp_abs P T e1) ->
@@ -979,6 +991,9 @@ Inductive red : exp -> exp -> Prop :=
       value v1 ->
       value v2 ->
       red (exp_second (exp_pair P v1 v2)) v2
+(** The upqual and check rules ensure that concrete qualifiers
+    are compatible before stepping.  This ensures that progress/preservation
+    are meaningful -- ill-typed/qualified programs will get stuck. *)
   | red_upqual_1 : forall P e1 e1',
       qual P ->
       red e1 e1' ->
