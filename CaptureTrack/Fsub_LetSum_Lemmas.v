@@ -686,13 +686,6 @@ Proof with eauto using wf_typ_narrowing_typ, wf_qua_narrowing_typ, wf_qtyp_narro
     inversion Wf_env; subst; simpl_env in *...
 Qed.
 
-(* Lemma wf_env_strengthening : forall x T E F,
-  wf_env (F ++ x ~ bind_typ T ++ E) ->
-  wf_env (F ++ E).
-Proof with eauto.
-  induction F; intros Wf_env; inversion Wf_env; subst; simpl_env in *...
-Qed. *)
-
 Lemma wf_env_subst_tb : forall Q Z P E F,
   wf_env (F ++ Z ~ bind_sub Q ++ E) ->
   wf_typ E P ->
@@ -718,6 +711,84 @@ Lemma wf_env_subst_qb_var : forall Q R Z P E F,
 Proof with eauto 6 using wf_typ_subst_qb_var, wf_qtyp_subst_qb_var, wf_qua_subst_qb_var.
   induction F; intros Wf_env WP; simpl_env;
     inversion Wf_env; simpl_env in *; simpl subst_qb...
+Qed.
+
+Lemma wf_qua_subst_qb_var_indep : forall F Q E Z P R T,
+  wf_qua (F ++ Z ~ bind_typ Q ++ E) T ->
+  wf_qua E P ->
+  wf_qua E R ->
+  uniq (map (subst_qb Z P) F ++ E) ->
+  wf_qua (map (subst_qb Z P) F ++ E) (subst_qq Z R T).
+Proof with simpl_env; eauto using wf_qua_weaken_head, type_from_wf_typ,
+  qual_from_wf_qua.
+------
+  intros F Q E Z P R T WT WP WR.
+  remember (F ++ Z ~ bind_typ Q ++ E) as G.
+  generalize dependent F.
+  induction WT; intros F EQ Ok; subst; simpl subst_qq...
+  Case "wf_qua_var".
+    destruct (X == Z); subst...
+    SCase "X in F".
+      analyze_binds H...
+      apply (wf_qua_fvar (subst_qq Z P R0))...
+  Case "wf_qua_term_var".
+    destruct (x == Z); subst...
+    SCase "x in F".
+      analyze_binds H...
+      apply (wf_qua_term_fvar (subst_qqt Z P T))...
+Qed.
+
+Lemma wf_qua_subst_qb_indep : forall F Q E Z P R T,
+  wf_qua (F ++ Z ~ bind_qua Q ++ E) T ->
+  wf_qua E P ->
+  wf_qua E R ->
+  uniq (map (subst_qb Z P) F ++ E) ->
+  wf_qua (map (subst_qb Z P) F ++ E) (subst_qq Z R T).
+Proof with simpl_env; eauto using wf_qua_weaken_head, type_from_wf_typ,
+  qual_from_wf_qua.
+------
+  intros F Q E Z P R T WT WP WR.
+  remember (F ++ Z ~ bind_qua Q ++ E) as G.
+  generalize dependent F.
+  induction WT; intros F EQ Ok; subst; simpl subst_qq...
+  Case "wf_qua_var".
+    destruct (X == Z); subst...
+    SCase "X in F".
+      analyze_binds H...
+      apply (wf_qua_fvar (subst_qq Z P R0))...
+  Case "wf_qua_term_var".
+    destruct (x == Z); subst...
+    SCase "x in F".
+      analyze_binds H...
+      apply (wf_qua_term_fvar (subst_qqt Z P T))...
+Qed.
+
+Lemma wf_typ_from_wf_qtyp : forall E Q T,
+  wf_qtyp E (qtyp_qtyp Q T) ->
+  wf_typ E T.
+Proof with eauto.
+  intros; inversion H...
+Qed.
+
+Lemma wf_qua_from_wf_qtyp : forall E Q T,
+  wf_qtyp E (qtyp_qtyp Q T) ->
+  wf_qua E Q.
+Proof with eauto.
+  intros; inversion H...
+Qed.
+
+Lemma wf_qua_from_all_bound : forall E Q,
+  qual Q ->
+  (forall X, X `in` fv_qq Q ->
+     (exists T, binds X (bind_typ T) E) \/ (exists Q, (binds X (bind_qua Q) E))) ->
+  wf_qua E Q.
+Proof with eauto.
+  intros.
+  induction H; subst; simpl in *...
+  - unshelve epose proof (H0 X _)...
+    destruct H as [[T Binds] | [Q Binds]]...
+  - econstructor...
+  - econstructor...
 Qed.
 
 (* ********************************************************************** *)
@@ -951,6 +1022,29 @@ Proof with eauto using notin_fv_qq_wf_qua.
   induction Wf_typ; intros Fr; simpl...
 Qed.
 
+Lemma fv_exp_for_qua_through_subst_ee : forall x Q u e,
+  (fv_exp_for_qua (subst_ee x u Q e)) = 
+    (subst_qq x (fv_exp_for_qua u) (fv_exp_for_qua e)).
+Proof with eauto; try solve [f_equal; eauto].
+  intros.
+  induction e; simpl; simpl subst_qq in *; simpl in *; eauto; f_equal...
+  * destruct (a == x); subst...
+Qed.
+
+Lemma fv_exp_for_qua_subst_te_intro : forall X P e,
+  fv_exp_for_qua e = fv_exp_for_qua (subst_te X P e).
+Proof with eauto; try solve [f_equal; eauto].
+  intros X P e.
+  induction e; simpl; eauto; f_equal...
+Qed.
+
+Lemma fv_exp_for_qua_subst_qe_intro : forall X P e,
+  fv_exp_for_qua e = fv_exp_for_qua (subst_qe X P e).
+Proof with eauto; try solve [f_equal; eauto].
+  intros X P e.
+  induction e; simpl; eauto; f_equal...
+Qed.
+
 Lemma map_subst_tb_id : forall G Z P,
   wf_env G ->
   Z `notin` dom G ->
@@ -978,108 +1072,6 @@ Proof with auto.
     rewrite <- subst_qqt_fresh... eapply notin_fv_qqt_wf_qtyp; eauto.
   rewrite <- IHwf_env...
     rewrite <- subst_qq_fresh... eapply notin_fv_qq_wf_qua; eauto.
-Qed.
-
-(* ********************************************************************** *)
-(** * #<a name="regularity"></a># Regularity of relations *)
-
-Lemma subqual_regular : forall E S T,
-  subqual E S T ->
-  wf_env E /\ wf_qua E S /\ wf_qua E T.
-Proof with simpl_env; try solve [auto | intuition auto].
-  intros E S T H.
-  induction H...
-  Case "sub_trans_qvar".
-    intuition eauto.
-  Case "sub_trans_qvar_term".
-    intuition eauto.
-Qed.
-
-Lemma sub_regular : forall E S T,
-  sub E S T ->
-  wf_env E /\ wf_typ E S /\ wf_typ E T
-with subqtype_regular : forall E S T,
-  subqtype E S T ->
-  wf_env E /\ wf_qtyp E S /\ wf_qtyp E T.
-Proof with simpl_env; try solve [auto | intuition auto].
-------
-  clear sub_regular.
-  intros E S T H.
-  induction H;
-    repeat (select (subqtype _ _ _) (fun H => apply subqtype_regular in H))...
-  Case "sub_trans_tvar".
-    intuition eauto.
-  Case "sub_arrow".
-    repeat split...
-    SCase "Second of original three conjuncts".
-      pick fresh Y and apply wf_typ_arrow...
-      unshelve epose proof (H0 Y _) as SubQ1;
-        try apply subqtype_regular in SubQ1...
-      rewrite_env (empty ++ Y ~ bind_typ S1 ++ E).
-      apply (wf_qtyp_narrowing_typ T1)...
-    SCase "Third of original three conjuncts".
-      pick fresh Y and apply wf_typ_arrow...
-      unshelve epose proof (H0 Y _) as SubQ1;
-        try apply subqtype_regular in SubQ1...
-  Case "sub_all".
-    repeat split...
-    SCase "Second of original three conjuncts".
-      pick fresh Y and apply wf_typ_all...
-      unshelve epose proof (H0 Y _) as SubQ1;
-        try apply subqtype_regular in SubQ1...
-      rewrite_env (empty ++ Y ~ bind_sub S1 ++ E).
-      apply (wf_qtyp_narrowing_sub T1)...
-    SCase "Third of original three conjuncts".
-      pick fresh Y and apply wf_typ_all...
-      unshelve epose proof (H0 Y _) as SubQ1;
-        try apply subqtype_regular in SubQ1...
-  Case "sub_qall".
-    eapply subqual_regular in H.
-    repeat split...
-    SCase "Second of original three conjuncts".
-      pick fresh Y and apply wf_typ_qall...
-      unshelve epose proof (H0 Y _) as SubQ1;
-        try apply subqtype_regular in SubQ1...
-      rewrite_env (empty ++ Y ~ bind_qua S1 ++ E).
-      apply (wf_qtyp_narrowing_qua T1)...
-    SCase "Third of original three conjuncts".
-      pick fresh Y and apply wf_typ_qall...
-      unshelve epose proof (H0 Y _) as SubQ1;
-      try apply subqtype_regular in SubQ1...
-------
-  clear subqtype_regular.
-  intros E S T H.
-  induction H;
-    repeat (select (sub _ _ _) (fun H => apply sub_regular in H));
-    repeat (select (subqual _ _ _) (fun H => apply subqual_regular in H))...
-Qed.
-
-Lemma wf_typ_from_wf_qtyp : forall E Q T,
-  wf_qtyp E (qtyp_qtyp Q T) ->
-  wf_typ E T.
-Proof with eauto.
-  intros; inversion H...
-Qed.
-
-Lemma wf_qua_from_wf_qtyp : forall E Q T,
-  wf_qtyp E (qtyp_qtyp Q T) ->
-  wf_qua E Q.
-Proof with eauto.
-  intros; inversion H...
-Qed.
-
-Lemma wf_qua_from_all_bound : forall E Q,
-  qual Q ->
-  (forall X, X `in` fv_qq Q ->
-     (exists T, binds X (bind_typ T) E) \/ (exists Q, (binds X (bind_qua Q) E))) ->
-  wf_qua E Q.
-Proof with eauto.
-  intros.
-  induction H; subst; simpl in *...
-  - unshelve epose proof (H0 X _)...
-    destruct H as [[T Binds] | [Q Binds]]...
-  - econstructor...
-  - econstructor...
 Qed.
 
 Lemma fv_exp_for_qua_qual : forall e,
@@ -1242,6 +1234,80 @@ Proof with eauto; simpl_env in *.
     analyze_binds Binds...
   - rewrite AtomSetFacts.union_iff in H0.
     destruct H0...
+Qed.
+
+(* ********************************************************************** *)
+(** * #<a name="regularity"></a># Regularity of relations *)
+
+Lemma subqual_regular : forall E S T,
+  subqual E S T ->
+  wf_env E /\ wf_qua E S /\ wf_qua E T.
+Proof with simpl_env; try solve [auto | intuition auto].
+  intros E S T H.
+  induction H...
+  Case "sub_trans_qvar".
+    intuition eauto.
+  Case "sub_trans_qvar_term".
+    intuition eauto.
+Qed.
+
+Lemma sub_regular : forall E S T,
+  sub E S T ->
+  wf_env E /\ wf_typ E S /\ wf_typ E T
+with subqtype_regular : forall E S T,
+  subqtype E S T ->
+  wf_env E /\ wf_qtyp E S /\ wf_qtyp E T.
+Proof with simpl_env; try solve [auto | intuition auto].
+------
+  clear sub_regular.
+  intros E S T H.
+  induction H;
+    repeat (select (subqtype _ _ _) (fun H => apply subqtype_regular in H))...
+  Case "sub_trans_tvar".
+    intuition eauto.
+  Case "sub_arrow".
+    repeat split...
+    SCase "Second of original three conjuncts".
+      pick fresh Y and apply wf_typ_arrow...
+      unshelve epose proof (H0 Y _) as SubQ1;
+        try apply subqtype_regular in SubQ1...
+      rewrite_env (empty ++ Y ~ bind_typ S1 ++ E).
+      apply (wf_qtyp_narrowing_typ T1)...
+    SCase "Third of original three conjuncts".
+      pick fresh Y and apply wf_typ_arrow...
+      unshelve epose proof (H0 Y _) as SubQ1;
+        try apply subqtype_regular in SubQ1...
+  Case "sub_all".
+    repeat split...
+    SCase "Second of original three conjuncts".
+      pick fresh Y and apply wf_typ_all...
+      unshelve epose proof (H0 Y _) as SubQ1;
+        try apply subqtype_regular in SubQ1...
+      rewrite_env (empty ++ Y ~ bind_sub S1 ++ E).
+      apply (wf_qtyp_narrowing_sub T1)...
+    SCase "Third of original three conjuncts".
+      pick fresh Y and apply wf_typ_all...
+      unshelve epose proof (H0 Y _) as SubQ1;
+        try apply subqtype_regular in SubQ1...
+  Case "sub_qall".
+    eapply subqual_regular in H.
+    repeat split...
+    SCase "Second of original three conjuncts".
+      pick fresh Y and apply wf_typ_qall...
+      unshelve epose proof (H0 Y _) as SubQ1;
+        try apply subqtype_regular in SubQ1...
+      rewrite_env (empty ++ Y ~ bind_qua S1 ++ E).
+      apply (wf_qtyp_narrowing_qua T1)...
+    SCase "Third of original three conjuncts".
+      pick fresh Y and apply wf_typ_qall...
+      unshelve epose proof (H0 Y _) as SubQ1;
+      try apply subqtype_regular in SubQ1...
+------
+  clear subqtype_regular.
+  intros E S T H.
+  induction H;
+    repeat (select (sub _ _ _) (fun H => apply sub_regular in H));
+    repeat (select (subqual _ _ _) (fun H => apply subqual_regular in H))...
 Qed.
 
 Lemma typing_qua : forall E e T,
@@ -1432,6 +1498,17 @@ Qed.
 (* *********************************************************************** *)
 (** * #<a name="auto"></a># Automation *)
 
+
+Lemma qual_from_typing_qtyp : forall E e Q T,
+  typing E e (qtyp_qtyp Q T) ->
+  qual Q.
+Proof with eauto using qual_from_wf_qua.
+  intros E e Q T Typ.
+  destruct (typing_regular E e (qtyp_qtyp Q T))
+    as [_ [_ Hqt]]...
+  eapply qtype_from_wf_qtyp in Hqt...
+  inversion Hqt...
+Qed.
 
 Lemma wf_qua_from_wf_qua_join_left : forall E R1 R2,
   wf_qua E (qua_join R1 R2) ->

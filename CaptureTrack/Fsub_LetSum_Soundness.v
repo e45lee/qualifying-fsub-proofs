@@ -1118,15 +1118,10 @@ Qed.
 (************************************************************************ *)
 (** ** Substitution preserves typing (8) *)
 
-Lemma qual_from_typing_qtyp : forall E e Q T,
-  typing E e (qtyp_qtyp Q T) ->
-  qual Q.
-Proof with eauto using qual_from_wf_qua.
-  intros E e Q T Typ.
-  destruct (typing_regular E e (qtyp_qtyp Q T))
-    as [_ [_ Hqt]]...
-Qed.
-
+(**
+  [capture_prediction] is necessary to make the proofs hold under
+  substitution.  This is also Lemma 3.7 in the paper.
+*)
 Lemma capture_prediction : forall E u Q U,
   value u ->
   typing E u (qtyp_qtyp Q U) ->
@@ -1158,55 +1153,6 @@ Proof with eauto using subqual_reflexivity; try discriminate.
     unshelve epose proof (IHTyp2 Q2 S2 _ _ _ _)...
     eapply subqual_join_split in H as [Sub1 Sub2]...
     eapply subqual_join_elim; eapply subqual_transitivity... 
-Qed.
-
-
-Lemma fv_exp_for_qua_through_subst_ee : forall x Q u e,
-  (fv_exp_for_qua (subst_ee x u Q e)) = 
-    (subst_qq x (fv_exp_for_qua u) (fv_exp_for_qua e)).
-Proof with eauto; try solve [f_equal; eauto].
-  intros.
-  induction e; simpl; simpl subst_qq in *; simpl in *; eauto; f_equal...
-  * destruct (a == x); subst...
-Qed.
-
-Lemma fv_exp_for_qua_subst_te_intro : forall X P e,
-  fv_exp_for_qua e = fv_exp_for_qua (subst_te X P e).
-Proof with eauto; try solve [f_equal; eauto].
-  intros X P e.
-  induction e; simpl; eauto; f_equal...
-Qed.
-
-Lemma fv_exp_for_qua_subst_qe_intro : forall X P e,
-  fv_exp_for_qua e = fv_exp_for_qua (subst_qe X P e).
-Proof with eauto; try solve [f_equal; eauto].
-  intros X P e.
-  induction e; simpl; eauto; f_equal...
-Qed.
-
-Lemma wf_qua_subst_qb_var_indep : forall F Q E Z P R T,
-  wf_qua (F ++ Z ~ bind_typ Q ++ E) T ->
-  wf_qua E P ->
-  wf_qua E R ->
-  uniq (map (subst_qb Z P) F ++ E) ->
-  wf_qua (map (subst_qb Z P) F ++ E) (subst_qq Z R T).
-Proof with simpl_env; eauto using wf_qua_weaken_head, type_from_wf_typ,
-  qual_from_wf_qua.
-------
-  intros F Q E Z P R T WT WP WR.
-  remember (F ++ Z ~ bind_typ Q ++ E) as G.
-  generalize dependent F.
-  induction WT; intros F EQ Ok; subst; simpl subst_qq...
-  Case "wf_qua_var".
-    destruct (X == Z); subst...
-    SCase "X in F".
-      analyze_binds H...
-      apply (wf_qua_fvar (subst_qq Z P R0))...
-  Case "wf_qua_term_var".
-    destruct (x == Z); subst...
-    SCase "x in F".
-      analyze_binds H...
-      apply (wf_qua_term_fvar (subst_qqt Z P T))...
 Qed.
 
 Lemma subqual_through_subst_qt_covariant : forall Q E F Z R P T,
@@ -1251,31 +1197,6 @@ Proof with eauto 4 using
   * eapply subqual_join_elim...
     - eapply subqual_join_inl...
     - eapply subqual_join_inr...
-Qed.
-
-Lemma wf_qua_subst_qb_indep : forall F Q E Z P R T,
-  wf_qua (F ++ Z ~ bind_qua Q ++ E) T ->
-  wf_qua E P ->
-  wf_qua E R ->
-  uniq (map (subst_qb Z P) F ++ E) ->
-  wf_qua (map (subst_qb Z P) F ++ E) (subst_qq Z R T).
-Proof with simpl_env; eauto using wf_qua_weaken_head, type_from_wf_typ,
-  qual_from_wf_qua.
-------
-  intros F Q E Z P R T WT WP WR.
-  remember (F ++ Z ~ bind_qua Q ++ E) as G.
-  generalize dependent F.
-  induction WT; intros F EQ Ok; subst; simpl subst_qq...
-  Case "wf_qua_var".
-    destruct (X == Z); subst...
-    SCase "X in F".
-      analyze_binds H...
-      apply (wf_qua_fvar (subst_qq Z P R0))...
-  Case "wf_qua_term_var".
-    destruct (x == Z); subst...
-    SCase "x in F".
-      analyze_binds H...
-      apply (wf_qua_term_fvar (subst_qqt Z P T))...
 Qed.
 
 Lemma subqual_through_subst_qq_covariant : forall Q E F Z R P T,
@@ -2298,6 +2219,7 @@ Qed.
 
 (* ********************************************************************** *)
 (** ** Preservation (20) *)
+
 
 Lemma preservation : forall E e e' T,
   typing E e T ->

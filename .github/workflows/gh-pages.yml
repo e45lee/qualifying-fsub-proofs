@@ -33,9 +33,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag proofs
+        run: docker build . --file Dockerfile --tag ghcr.io/e45lee/qualifying-fsub-proofs:proofs
       - name: Extract the proof HTML
-        run: docker run -w /proofs/html ghcr.io/e45lee/qualifying-fsub-proofs:main tar c . | tar x --one-top-level=_site
+        run: docker run -w /proofs/html ghcr.io/e45lee/qualifying-fsub-proofs:proofs tar c . | tar x --one-top-level=_site
       - name: Create artifact
         run: tar czf github-pages.tar.gz _site
       - name: Upload artifact
