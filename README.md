@@ -7,7 +7,7 @@ This GitHub repository constitutes the artifact for our paper
 
 ## Overview
 
-The artifact consists of the Coq proofs for our paper, based on the [https://github.com/plclub/metalib](POPLMark 08 tutorial) by Aydemir et al, and using lattice definitions from [https://github.com/jwiegley/coq-lattice](Wigley 2022).  There are five calculi formalized in this artifact.
+The artifact consists of the Coq proofs for our paper, based on the [POPLMark 08 tutorial](https://github.com/plclub/metalib) by Aydemir et al, and using lattice definitions from [Wigley 2022](https://github.com/jwiegley/coq-lattice).  There are five calculi formalized in this artifact.
 
 1.  System Fq (in [Base](Base)), a simple, two-pointed qualifier system with no interpretation
     on qualifiers.
@@ -16,9 +16,9 @@ The artifact consists of the Coq proofs for our paper, based on the [https://git
 3.  System Fqa (in [FuncColour](FuncColour)), a two-pointed qualifier system modelling function colouring
     on two colours (async/sync).
 4.  System Fqc (in [CaptureTrack](CaptureTrack)), a two-pointed qualifier system modelling capture tracking
-    using tracked/untracked qualifiers.  For an introduction: see [https://doi.org/10.1145/3618003](Aleksander Boruch-Gruszecki, Martin Odersky, Edward Lee, 
+    using tracked/untracked qualifiers.  For an introduction: see [Aleksander Boruch-Gruszecki, Martin Odersky, Edward Lee, 
     Ondřej Lhoták, and Jonathan Brachthäuser. 2023. Capturing Types. ACM Trans. Program. Lang. Syst. 45, 4, 
-    Article 21 (December 2023), 52 pages.)
+    Article 21 (December 2023), 52 pages.](https://doi.org/10.1145/3618003)
 5.  System Fq (in [ExtendedBase](ExtendedBase)), modelling a qualifier system over an arbitrary initial qualifier lattice.
  
 ## Getting Started -- Building Locally
