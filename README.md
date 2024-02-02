@@ -20,6 +20,10 @@ The artifact consists of the Coq proofs for our paper, based on the [POPLMark 08
     Ondřej Lhoták, and Jonathan Brachthäuser. 2023. Capturing Types. ACM Trans. Program. Lang. Syst. 45, 4, 
     Article 21 (December 2023), 52 pages.](https://doi.org/10.1145/3618003)
 5.  System Fq (in [ExtendedBase](ExtendedBase)), modelling a qualifier system over an arbitrary initial qualifier lattice.
+
+Additionally, we give a mechanized proof of the crux of [Galatos' result](https://link.springer.com/article/10.1007/s11225-023-10063-4) in [LatticeReflTrans.v](LatticeReflTrans.v) formed by extracting the relevant parts
+of the proof of reflexivity and transitivity of the subqualification relation
+in System Fq.
  
 ## Getting Started -- Building Locally
 
