@@ -50,3 +50,4 @@ FqMeta/LibLNgen.v
 FqMeta/LibTactics.v
 FqMeta/Metatheory.v
 FqMeta/MetatheoryAtom.v
+LatticeReflTrans.v

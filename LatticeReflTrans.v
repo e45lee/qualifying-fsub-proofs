@@ -2,8 +2,9 @@
     
     Here, we present a mechanized, syntactic proof of the crux of 
     Galatos' paper [1]; that transitivity can be made redundant
-    with the right, syntax-directed, Gentzen-style natural deduction
-    rules for the equational theory of lattices.
+    by pushing it into the other rules in the Gentzen-style 
+    natural deduction rules for the equational theory of lattices
+    to obtain a syntax-directed algorithmic set of deduction rules.
     
     
     [1] https://link.springer.com/article/10.1007/s11225-023-10063-4
