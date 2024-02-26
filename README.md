@@ -3,7 +3,7 @@
 This GitHub repository constitutes the artifact for our paper
 
 > Qualifying System F-Sub.  Edward Lee, Yaoyu Zhao, Ondřej Lhoták, James You, Kavin Satheeskumar, and Jonathan Immanuel Brachthäuser.
-> Conditionally accepted at OOPSLA 2024.
+> OOPSLA 2024 (Proc. ACM Program. Lang. 8, OOPSLA1, Article 115 (April 2024), 30 pages. https://doi.org/10.1145/3649832).
 
 ## Overview
 
