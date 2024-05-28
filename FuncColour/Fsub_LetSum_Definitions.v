@@ -1095,7 +1095,7 @@ Inductive barrier_compatible : ctx -> concrete_qua -> Prop :=
       barrier_compatible (frame_barrier t :: c) s
   | barrier_compatible_other : forall c s f,
       barrier_compatible c s ->
-      f <> frame_barrier s ->
+      (forall t, f <> frame_barrier t) ->
       barrier_compatible (f :: c) s
 .
 
